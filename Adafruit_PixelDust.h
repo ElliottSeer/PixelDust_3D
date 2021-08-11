@@ -21,11 +21,12 @@
 #include <Arduino.h>
 #else
 #include <math.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 /*! Remap Arduino-style random() to stdlib-style. */
-#define random(X) (random() % X)
+#define random(X) (X ? (random() % (X)):(0))
 #endif
 
 // The internal representation of sand grains places them in an integer
@@ -34,21 +35,9 @@
 // relatively smooth) without having to go all floating-point about it.
 // Positions are divided by 256 for pixel display and collision detection.
 
-#ifdef __AVR__
-// For better performance and RAM utilization on AVR microcontrollers,
-// display is limited to maximum 127x127 pixels and 255 grains of sand.
-// You can try overriding either or both here, RAM permitting.
-typedef uint8_t dimension_t;   ///< Pixel dimensions
-typedef int16_t position_t;    ///< 'Sand space' coords (256X pixel space)
-typedef uint8_t grain_count_t; ///< Number of grains
-#else
-// Anything non-AVR is presumed more capable, maybe a Cortex M0 or other
-// 32-bit device.  These go up to 32767x32767 pixels and 65535 grains.
 typedef uint16_t dimension_t;   ///< Pixel dimensions
-typedef int8_t position_t;     ///< 'Sand space' coords (256X pixel space)
+typedef int32_t position_t;      ///< 'Sand space' coords (256X pixel space)
 typedef uint16_t grain_count_t; ///< Number of grains
-#endif
-// Velocity type is same on any architecture -- must allow up to +/- 256
 typedef int16_t velocity_t; ///< Velocity type
 
 /*!
@@ -56,7 +45,8 @@ typedef int16_t velocity_t; ///< Velocity type
     An array of these structures is allocated in the begin() function,
     one per grain.  8 bytes each on AVR, 12 bytes elsewhere.
 */
-typedef struct {
+typedef struct
+{
   position_t x;  ///< Horizontal position in 'sand space'
   position_t y;  ///< Vertical position in 'sand space'
   position_t z;  ///< Depth position in 'sand space
@@ -74,7 +64,8 @@ typedef struct {
     that's appealing to the eye but takes many shortcuts with collision
     detection, etc.
 */
-class Adafruit_PixelDust {
+class Adafruit_PixelDust
+{
 public:
   /*!
       @brief Constructor -- allocates the basic Adafruit_PixelDust object,
@@ -92,15 +83,8 @@ public:
       @param e    Particle elasticity (0-255) (optional, default is 128).
                   This determines the sand grains' "bounce" -- higher numbers
                   yield bouncier particles.
-      @param sort If true, particles are sorted bottom-to-top when iterating.
-                  Sorting sometimes (not always) makes the physics less
-                  "Looney Tunes," as lower particles get out of the way of
-                  upper particles.  It can be computationally expensive if
-                  there's lots of grains, and isn't good if you're coloring
-                  grains by index (because they're constantly reordering).
   */
-  Adafruit_PixelDust(dimension_t w, dimension_t h, dimension_t d, grain_count_t n, uint8_t s,
-                     uint8_t e = 128, bool sort = false);
+  Adafruit_PixelDust(dimension_t w, dimension_t h, dimension_t d, grain_count_t n, uint8_t s, uint8_t e = 128);
 
   /*!
       @brief Destructor -- deallocates memory associated with the
@@ -200,7 +184,6 @@ private:
       elasticity,         // Grain elasticity (bounce) = elasticity/256
       *bitmap;            // 2-bit-per-pixel bitmap (width padded to byte)
   Grain *grain;           // One per grain, alloc'd in begin()
-  bool sort;              // If true, sort bottom-to-top when iterating
 };
 
 #endif // _ADAFRUIT_PIXELDUST_H_
